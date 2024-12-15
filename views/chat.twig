@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat Application</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let username = ''; // Store the user's nickname
+
+        // Ask the user to input a nickname when they join the chat
+        function setUsername() {
+            const nameInput = document.getElementById('username');
+            username = nameInput.value.trim();
+            if (username) {
+                document.getElementById('usernameForm').style.display = 'none';
+                document.getElementById('chat').style.display = 'block';
+                socket.emit('set username', username); // Send the username to the server
+            } else {
+                alert('Please enter a valid nickname.');
+            }
+        }
+
+        // Listen for notifications
+        socket.on('msg', (message) => {
+            const messages = document.getElementById('messages');
+            const newMessage = document.createElement('li');
+            newMessage.textContent = message;
+            messages.appendChild(newMessage);
+        });
+
+        // Listen for chat messages
+        socket.on('chat message', (message) => {
+            const messages = document.getElementById('messages');
+            const newMessage = document.createElement('li');
+            newMessage.textContent = message;
+            messages.appendChild(newMessage);
+        });
+
+        // Listen for typing notifications
+        socket.on('typing', (message) => {
+            const typing = document.getElementById('typing');
+            typing.textContent = message;
+        });
+
+        // Send chat messages
+        function sendMessage() {
+            const input = document.getElementById('message');
+            const message = input.value.trim();
+            if (message) {
+                socket.emit('chat message', { username: username, message: message });
+                input.value = ''; // Clear the input field
+                document.getElementById('typing').textContent = ''; // Clear typing notification
+            }
+        }
+
+        // Emit typing notification
+        function typingNotification() {
+            if (document.getElementById('message').value.trim() === '') {
+                // If message input is empty, stop typing notification
+                document.getElementById('typing').textContent = '';
+                socket.emit('typing', '');
+            } else {
+                socket.emit('typing', `${username} is typing...`);
+            }
+        }
+    </script>
+</head>
+<body>
+    <!-- Username input form -->
+    <div id="usernameForm">
+        <label for="username">Enter your nickname:</label>
+        <input id="username" type="text" placeholder="Enter your nickname">
+        <button onclick="setUsername()">Join Chat</button>
+    </div>
+
+    <!-- Chat interface (hidden until user enters a nickname) -->
+    <div id="chat" style="display:none;">
+        <ul id="messages"></ul>
+        <p id="typing" style="color: gray; font-style: italic;"></p>
+        <input id="message" type="text" placeholder="Type your message here" onkeyup="typingNotification()">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+</body>
+</html>
